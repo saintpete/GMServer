@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset = "UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+
+    <h1>Hello World!</h1>
+    <div id="future"></div>
+    <form id="form" id="chat_form">
+        <input id="chat_input" type="text">
+        <input type="submit" value="Send">
+    </form>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js" type="text/javascript"></script>
+    <script src="../socket.io-client/dist/socket.io.js"></script>
+
+<!--<script src = "javascripts/test_connection.js" type="text/javascript"></script>-->
+
+    <script>
+     var socket = io.connect('http://127.0.0.1:4200');
+     socket.on('connect', function(data) {
+         console.log("connected");
+        socket.emit('join', 'Hello World from client');
+     });
+     
+     socket.on('messages', function(data) {
+             alert(data);
+     });
+     
+     socket.on('broad', function(data) {
+             $('#future').append(data+ "<br/>");
+       });
+     
+     
+    
+     $('form').submit(function(e){
+         e.preventDefault();
+         var message = $('#chat_input').val();
+         console.log("msg", message);
+         socket.emit('messages', message);
+     });
+    </script>
+</body>
+</html>
