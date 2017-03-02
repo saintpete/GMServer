@@ -15,7 +15,7 @@ app.get('/', function(req, res,next) {
 
 let alexa_response = undefined;
 
-app.get('/test', (req, res, next) => {
+app.get('/otto-request', (req, res, next) => {
 
 
     console.log("Alexa sent", req.query);
