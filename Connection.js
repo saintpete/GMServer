@@ -18,16 +18,27 @@ let alexa_response = undefined;
 app.get('/otto-request', (req, res, next) => {
 
 
+    alexa_response = undefined;
     console.log("Alexa sent", req.query);
     broadcast(req.query);
-    while(typeof alexa_response === typeof undefined){
-        setTimeout(() => {
-            console.log("waiting on response");
-        }, 1000);
-    }
+    const promise = new Promise(resolve => {
+        function check(){
+            setTimeout(() => {
+                if(typeof alexa_response !== typeof undefined){
+                    resolve();
+                }
+                else{
+                    check();
+                }
+            }, 100);
+        }
 
-    console.log("sending response to alexa", alexa_response);
-    return res.send(alexa_response);
+        check();
+    });
+
+    promise.then(() => {
+        res.send(alexa_response);
+    });
 });
 
 const connections = [];
@@ -35,26 +46,18 @@ const connections = [];
 io.on('connection', function(client) {
     console.log('Client connected...');
 
-    connections.push(client);
-
-    client.on('join', function (data) {
-        console.log(data);
-    });
-
-    client.on('messages', data => {
-        console.log("message received", data);
-    });
-
     client.on('otto', data => {
         console.log("message from gm received", data);
         alexa_response = data;
         // broadcast(data);
     });
 
+    connections.push(client);
 });
 
 
 function broadcast(data) {
+    console.log(`There are ${connections.length} current connections`);
     connections.forEach(conn => {
         conn.emit("request", data);
     });
