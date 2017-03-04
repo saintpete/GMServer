@@ -19,34 +19,7 @@
     
     <script src="http://forte9293.ngrok.io/socket.io-client/dist/socket.io.js"></script>
 
-<!--<script src = "javascripts/test_connection.js" type="text/javascript"></script>-->
+<script src = "javascripts/test_connection.js" type="text/javascript"></script>
 
-    <script>
-//        const test = new ConnectionTest();
-//        test.onOpen();
-     const socket = io.connect('http://forte9293.ngrok.io');
-     console.log(socket);
-     socket.on('connect', function(data) {
-         
-        socket.emit('join', 'Hello World from client');
-     });
-
-     socket.on('messages', function(data) {
-             alert(data);
-     });
-
-     socket.on('broad', function(data) {
-//             $('#future').append(data+ "<br/>");
-       });
-
-
-
-    document.querySelector('input[type="submit"]').addEventListener('click', ev => {
-        ev.preventDefault();
-        const val = document.getElementById('chat_input').value;
-        console.log('val', val);
-        socket.emit('messages', val);
-    });
-    </script>
 </body>
 </html>

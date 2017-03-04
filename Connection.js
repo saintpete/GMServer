@@ -17,11 +17,18 @@ let alexa_response = undefined;
 
 app.get('/otto-request', (req, res, next) => {
 
+    alexa_response   = undefined;
+    const to_vehicle = send_to_vehicle(req.query);
 
-    alexa_response = undefined;
-    console.log("Alexa sent", req.query);
-    broadcast(req.query);
+    if(to_vehicle){
+        broadcastToVehicles(req.query);
+    }
+    else {
+        broadcastToPhones('pong');
+    }
+
     const promise = new Promise(resolve => {
+        //Check every 100 ms to see if the request has completed
         function check(){
             setTimeout(() => {
                 if(typeof alexa_response !== typeof undefined){
@@ -41,7 +48,28 @@ app.get('/otto-request', (req, res, next) => {
     });
 });
 
-const connections = [];
+
+
+const phones      = [];
+const vehicles    = [];
+
+io.use((socket, next) => {
+    const handshake = socket.handshake;
+    const query     = handshake.query;
+    console.log("query", query);
+    if(query.hasOwnProperty('vehicle')){
+        vehicles.push({
+            connection : {
+                vin     : query.vin,
+                client  : socket
+            }
+        });
+    }
+    else {
+        phones.push(socket);
+    }
+    next();
+});
 
 io.on('connection', function(client) {
     console.log('Client connected...');
@@ -49,18 +77,65 @@ io.on('connection', function(client) {
     client.on('otto', data => {
         console.log("message from gm received", data);
         alexa_response = data;
-        // broadcast(data);
     });
 
-    connections.push(client);
+
+    client.on('location_request', data => {
+        console.log("to vehicles", data);
+        broadcastToVehicles({
+            "intent_name" : "NAV",
+            "address" : data
+        });
+    });
+
+
+    client.on('end', () => {
+        client.disconnect();
+    });
+
 });
 
 
-function broadcast(data) {
-    console.log(`There are ${connections.length} current connections`);
-    connections.forEach(conn => {
-        conn.emit("request", data);
+/**
+ * Broadcast a message to all connected phones
+ *
+ * @param data
+ */
+function broadcastToPhones(data){
+    console.log("to phones");
+    phones.forEach(phone => {
+       phone.emit("location_request", data);
     });
+}
+
+/**
+ * Broadcast a message to all connected vehicles
+ *
+ * @param data
+ */
+function broadcastToVehicles(data){
+    vehicles.forEach(vehicle => {
+        vehicle.connection.client.emit("request", data);
+    });
+}
+
+/**
+ * Determine if we need to send a request to the vehicle or the phone.
+ *
+ * @param query
+ * @returns {boolean}
+ */
+function send_to_vehicle(query) {
+
+
+    const intent = query['intent_name'];
+
+    if(intent !== "NAV"){
+        return true;
+    }
+
+    const slot = JSON.parse(query['slots'])[0];
+    return slot['value'] !== "Zach";
 }
 
 
